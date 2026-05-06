@@ -22,7 +22,7 @@ export async function verifyToken(token: string) {
 }
 
 export async function getTokenFromCookies(request: NextRequest) {
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const token = cookieStore.get('auth_token')?.value
   return token
 }
