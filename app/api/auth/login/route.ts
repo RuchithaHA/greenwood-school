@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
-    const token = await signToken({ adminId: admin.id, email: admin.email })
+    const token = await signToken({ id: admin.id, name: admin.name, email: admin.email, role: 'admin' })
 
     const response = NextResponse.json({ success: true, admin: { id: admin.id, name: admin.name, email: admin.email } })
-    response.cookies.set('auth_token', token, {
+    response.cookies.set('adminToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',

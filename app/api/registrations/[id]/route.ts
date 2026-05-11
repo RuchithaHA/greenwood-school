@@ -6,13 +6,13 @@ import { verifyToken } from '@/lib/auth'
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const token = request.cookies.get('auth_token')?.value
+    const token = request.cookies.get('adminToken')?.value
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const payload = await verifyToken(token)
-    if (!payload) {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -35,13 +35,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const token = request.cookies.get('auth_token')?.value
+    const token = request.cookies.get('adminToken')?.value
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const payload = await verifyToken(token)
-    if (!payload) {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

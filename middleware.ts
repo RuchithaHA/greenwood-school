@@ -5,22 +5,50 @@ import { verifyToken } from './lib/auth'
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
-  // Allow access to admin login page
-  if (path === '/admin/login') {
+  // Allow access to auth pages
+  if (path === '/admin/login' || path === '/auth/login' || path === '/auth/signup') {
     return NextResponse.next()
   }
 
-  // Protect all /admin routes
-  if (path.startsWith('/admin')) {
-    const token = request.cookies.get('auth_token')?.value
+  // Protect all /admin routes (except /admin/login)
+  if (path.startsWith('/admin') && path !== '/admin/login') {
+    const token = request.cookies.get('adminToken')?.value
 
     if (!token) {
       return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
     const payload = await verifyToken(token)
-    if (!payload) {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+  }
+
+  // Protect all /student routes
+  if (path.startsWith('/student')) {
+    const token = request.cookies.get('studentToken')?.value
+
+    if (!token) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    const payload = await verifyToken(token)
+    if (!payload || payload.role !== 'student') {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+  }
+
+  // Protect registration page - requires student login
+  if (path === '/registration') {
+    const token = request.cookies.get('studentToken')?.value
+
+    if (!token) {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
+    }
+
+    const payload = await verifyToken(token)
+    if (!payload || payload.role !== 'student') {
+      return NextResponse.redirect(new URL('/auth/login', request.url))
     }
   }
 
@@ -28,5 +56,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/admin/:path*',
+  matcher: ['/admin/:path*', '/student/:path*', '/registration'],
 }

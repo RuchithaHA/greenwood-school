@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 export async function POST() {
   try {
     const response = NextResponse.json({ success: true })
-    response.cookies.delete('auth_token')
+    response.cookies.delete('adminToken')
 
     return response
   } catch (error) {

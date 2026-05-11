@@ -1,25 +1,94 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 
+interface Student {
+  id: number
+  name: string
+  email: string
+  phone: string
+}
+
+interface Application {
+  id: number
+  studentName: string
+  dob: string
+  classApplying: string
+  gender: string
+  parentName: string
+  phone: string
+  email: string
+  address: string
+  prevSchool?: string
+  status: string
+  createdAt: string
+}
+
 export default function RegistrationPage() {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [student, setStudent] = useState<Student | null>(null)
+  const [application, setApplication] = useState<Application | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm()
 
+  useEffect(() => {
+    fetchStudentData()
+    fetchApplication()
+  }, [])
+
+  const fetchStudentData = async () => {
+    try {
+      const response = await fetch('/api/student/profile')
+      if (response.ok) {
+        const data = await response.json()
+        setStudent(data)
+        setValue('email', data.email)
+      } else {
+        // Not logged in, will be redirected by middleware
+      }
+    } catch (error) {
+      console.error('Failed to fetch student data')
+    }
+  }
+
+  const fetchApplication = async () => {
+    try {
+      const response = await fetch('/api/student/application')
+      if (response.ok) {
+        const data = await response.json()
+        setApplication(data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch application')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const onSubmit = async (data: any) => {
+    if (!student) return
+
     setIsSubmitting(true)
     try {
       const response = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          studentId: student.id
+        }),
       })
 
       const result = await response.json()
@@ -33,8 +102,8 @@ export default function RegistrationPage() {
         return
       }
 
-      toast.success('Registration submitted! We will contact you within 48 hours.')
-      reset()
+      toast.success('Application submitted successfully!')
+      router.push('/student/dashboard')
     } catch (error) {
       toast.error('Something went wrong. Please try again.')
     } finally {
@@ -43,6 +112,71 @@ export default function RegistrationPage() {
   }
 
   const classes = ['LKG', 'UKG', ...Array.from({ length: 12 }, (_, i) => String(i + 1))]
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      </div>
+    )
+  }
+
+  // If not logged in, show login prompt (middleware should redirect anyway)
+  if (!student) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4">
+        <div className="max-w-md w-full text-center">
+          <div className="mx-auto h-12 w-12 bg-green-600 rounded-lg flex items-center justify-center mb-4">
+            <span className="text-white font-bold text-xl">G</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Please login to apply for admission
+          </h2>
+          <p className="text-gray-600 mb-6">
+            You need to create a student account first before applying for admission.
+          </p>
+          <Link
+            href="/auth/login"
+            className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Login to Continue
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // If already applied, show status
+  if (application) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <div className="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-green-600 text-2xl">✓</span>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Application Already Submitted
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your application for {application.classApplying} has been submitted and is currently being processed.
+            </p>
+            <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 mb-6">
+              Status: {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+            </div>
+            <div>
+              <Link
+                href="/student/dashboard"
+                className="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                Go to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -175,23 +309,16 @@ export default function RegistrationPage() {
                 )}
               </div>
 
-              {/* Email */}
+              {/* Email - Read-only */}
               <div>
                 <label className="block text-gray-700 font-semibold mb-2">Email Address *</label>
                 <input
                   type="email"
-                  {...register('email', {
-                    required: 'Email is required',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Invalid email address',
-                    },
-                  })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f4a61d]"
+                  value={student.email}
+                  disabled
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
                 />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mt-1">{errors.email.message?.toString()}</p>
-                )}
+                <p className="text-xs text-gray-500 mt-1">Email from your account (cannot be changed)</p>
               </div>
 
               {/* Address */}

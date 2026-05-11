@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import DataTable from '@/components/DataTable'
 import CRUDModal from '@/components/CRUDModal'
-import { Plus, Trash2, Edit } from 'lucide-react'
+import { Plus, Trash2, Edit, Eye, Calendar, Tag, Image as ImageIcon, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AdminEventsPage() {
@@ -12,6 +12,8 @@ export default function AdminEventsPage() {
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<any>(null)
+  const [selectedEvent, setSelectedEvent] = useState<any | null>(null)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
 
   useEffect(() => {
     fetchEvents()
@@ -68,6 +70,11 @@ export default function AdminEventsPage() {
     }
   }
 
+  const viewDetails = (event: any) => {
+    setSelectedEvent(event)
+    setShowDetailsModal(true)
+  }
+
   const fields = [
     { name: 'title', label: 'Title', type: 'text' as const, required: true },
     { name: 'description', label: 'Description', type: 'textarea' as const, required: true },
@@ -89,6 +96,13 @@ export default function AdminEventsPage() {
       header: 'Actions',
       render: (_: any, row: any) => (
         <div className="flex gap-2">
+          <button
+            onClick={() => viewDetails(row)}
+            className="p-2 text-purple-600 hover:bg-purple-100 rounded"
+            title="View Details"
+          >
+            <Eye size={18} />
+          </button>
           <button
             onClick={() => {
               setEditingEvent(row)
@@ -146,6 +160,104 @@ export default function AdminEventsPage() {
           fields={fields}
           initialData={editingEvent}
         />
+
+        {/* Event Details Modal */}
+        {showDetailsModal && selectedEvent && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-[#1a5c2e]">Event Details</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Event Header */}
+                <div>
+                  <h3 className="text-xl font-semibold text-[#1a5c2e] mb-2">{selectedEvent.title}</h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    <span className="flex items-center">
+                      <Calendar size={16} className="mr-1" />
+                      {new Date(selectedEvent.eventDate).toLocaleDateString()}
+                    </span>
+                    <span className="flex items-center">
+                      <Tag size={16} className="mr-1" />
+                      {selectedEvent.category}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Event Image */}
+                {selectedEvent.imageUrl && (
+                  <div>
+                    <h4 className="text-lg font-semibold text-[#1a5c2e] mb-2 flex items-center">
+                      <ImageIcon size={20} className="mr-2" />
+                      Event Image
+                    </h4>
+                    <img
+                      src={selectedEvent.imageUrl}
+                      alt={selectedEvent.title}
+                      className="w-full h-64 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://via.placeholder.com/400x200?text=No+Image'
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Event Description */}
+                <div>
+                  <h4 className="text-lg font-semibold text-[#1a5c2e] mb-2">Description</h4>
+                  <p className="text-gray-700 whitespace-pre-wrap">{selectedEvent.description}</p>
+                </div>
+
+                {/* Event Details */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Event Date</p>
+                    <p className="font-medium">{new Date(selectedEvent.eventDate).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Category</p>
+                    <p className="font-medium">{selectedEvent.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Created On</p>
+                    <p className="font-medium">{new Date(selectedEvent.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Last Updated</p>
+                    <p className="font-medium">{new Date(selectedEvent.updatedAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={() => {
+                    setEditingEvent(selectedEvent)
+                    setShowDetailsModal(false)
+                    setIsModalOpen(true)
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Edit Event
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

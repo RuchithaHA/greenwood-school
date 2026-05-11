@@ -68,22 +68,43 @@ export default function AdminStudentsPage() {
     }
   }
 
-  const fields = [
-    { name: 'name', label: 'Name', type: 'text' as const, required: true },
-    { name: 'class', label: 'Class', type: 'text' as const, required: true },
-    { name: 'section', label: 'Section', type: 'text' as const, required: true },
-    { name: 'rollNo', label: 'Roll Number', type: 'text' as const, required: true },
-    { name: 'parentName', label: 'Parent Name', type: 'text' as const, required: true },
-    { name: 'phone', label: 'Phone', type: 'text' as const, required: true },
+  const getFields = (isEditing: boolean) => [
+    { name: 'name', label: 'Full Name', type: 'text' as const, required: true },
+    { name: 'email', label: 'Email Address', type: 'email' as const, required: true },
+    { name: 'phone', label: 'Phone Number', type: 'text' as const, required: true },
+    { 
+      name: 'password', 
+      label: 'Password', 
+      type: 'text' as const, 
+      required: !isEditing,
+      placeholder: isEditing ? 'Leave blank to keep current password' : 'Enter password'
+    },
   ]
 
   const columns = [
     { key: 'name', header: 'Name' },
-    { key: 'class', header: 'Class' },
-    { key: 'section', header: 'Section' },
-    { key: 'rollNo', header: 'Roll No' },
-    { key: 'parentName', header: 'Parent' },
+    { key: 'email', header: 'Email' },
     { key: 'phone', header: 'Phone' },
+    {
+      key: 'registration',
+      header: 'Application Status',
+      render: (value: any) => (
+        value ? (
+          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+            Applied ({value.status})
+          </span>
+        ) : (
+          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
+            Not Applied
+          </span>
+        )
+      ),
+    },
+    {
+      key: 'createdAt',
+      header: 'Joined Date',
+      render: (value: string) => new Date(value).toLocaleDateString(),
+    },
     {
       key: 'actions',
       header: 'Actions',
@@ -125,7 +146,7 @@ export default function AdminStudentsPage() {
             className="px-4 py-2 bg-[#f4a61d] text-[#1a5c2e] rounded-lg hover:bg-[#e59515] flex items-center gap-2"
           >
             <Plus size={20} />
-            Add Student
+            Add Student Account
           </button>
         </div>
 
@@ -141,9 +162,9 @@ export default function AdminStudentsPage() {
             setIsModalOpen(false)
             setEditingStudent(null)
           }}
-          title={editingStudent ? 'Edit Student' : 'Add Student'}
+          title={editingStudent ? 'Edit Student Account' : 'Add Student Account'}
           onSubmit={handleSave}
-          fields={fields}
+          fields={getFields(!!editingStudent)}
           initialData={editingStudent}
         />
       </main>

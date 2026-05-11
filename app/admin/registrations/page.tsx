@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react'
 import AdminSidebar from '@/components/AdminSidebar'
 import DataTable from '@/components/DataTable'
-import { Check, X, Trash2, Search, Download } from 'lucide-react'
+import { Check, X, Trash2, Search, Download, Eye, Mail, Phone, Calendar, User } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 export default function AdminRegistrationsPage() {
   const [registrations, setRegistrations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedRegistration, setSelectedRegistration] = useState<any | null>(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     fetchRegistrations()
@@ -59,6 +61,11 @@ export default function AdminRegistrationsPage() {
     } catch (error) {
       toast.error('Failed to delete registration')
     }
+  }
+
+  const viewDetails = (registration: any) => {
+    setSelectedRegistration(registration)
+    setShowModal(true)
   }
 
   const exportCSV = () => {
@@ -122,9 +129,17 @@ export default function AdminRegistrationsPage() {
       render: (_: any, row: any) => (
         <div className="flex gap-2">
           <button
+            onClick={() => viewDetails(row)}
+            className="p-2 text-blue-600 hover:bg-blue-100 rounded"
+            title="View Details"
+          >
+            <Eye size={18} />
+          </button>
+          <button
             onClick={() => updateStatus(row.id, 'approved')}
             className="p-2 text-green-600 hover:bg-green-100 rounded"
             title="Approve"
+            disabled={row.status === 'approved'}
           >
             <Check size={18} />
           </button>
@@ -132,6 +147,7 @@ export default function AdminRegistrationsPage() {
             onClick={() => updateStatus(row.id, 'rejected')}
             className="p-2 text-red-600 hover:bg-red-100 rounded"
             title="Reject"
+            disabled={row.status === 'rejected'}
           >
             <X size={18} />
           </button>
@@ -177,6 +193,154 @@ export default function AdminRegistrationsPage() {
           <div className="text-gray-600">Loading...</div>
         ) : (
           <DataTable columns={columns} data={filteredRegistrations} />
+        )}
+
+        {/* Registration Details Modal */}
+        {showModal && selectedRegistration && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-[#1a5c2e]">Registration Details</h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Student Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1a5c2e] mb-3 flex items-center">
+                    <User size={20} className="mr-2" />
+                    Student Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Name</p>
+                      <p className="font-medium">{selectedRegistration.studentName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Date of Birth</p>
+                      <p className="font-medium">{new Date(selectedRegistration.dob).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Class Applying For</p>
+                      <p className="font-medium">{selectedRegistration.classApplying}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Gender</p>
+                      <p className="font-medium">{selectedRegistration.gender}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Parent Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1a5c2e] mb-3 flex items-center">
+                    <User size={20} className="mr-2" />
+                    Parent Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Parent Name</p>
+                      <p className="font-medium">{selectedRegistration.parentName}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="font-medium flex items-center">
+                        <Phone size={16} className="mr-1" />
+                        {selectedRegistration.phone}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1a5c2e] mb-3 flex items-center">
+                    <Mail size={20} className="mr-2" />
+                    Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium">{selectedRegistration.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Address</p>
+                      <p className="font-medium">{selectedRegistration.address}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-[#1a5c2e] mb-3 flex items-center">
+                    <Calendar size={20} className="mr-2" />
+                    Additional Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Previous School</p>
+                      <p className="font-medium">{selectedRegistration.prevSchool || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Application Date</p>
+                      <p className="font-medium">{new Date(selectedRegistration.createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                          selectedRegistration.status === 'approved'
+                            ? 'bg-green-100 text-green-800'
+                            : selectedRegistration.status === 'rejected'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
+                        {selectedRegistration.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-8">
+                {selectedRegistration.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedRegistration.id, 'approved')
+                        setShowModal(false)
+                      }}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      Approve Application
+                    </button>
+                    <button
+                      onClick={() => {
+                        updateStatus(selectedRegistration.id, 'rejected')
+                        setShowModal(false)
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    >
+                      Reject Application
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

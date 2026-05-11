@@ -5,13 +5,13 @@ import { verifyToken } from '@/lib/auth'
 // GET - Fetch all registrations (Admin only)
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('auth_token')?.value
+    const token = request.cookies.get('adminToken')?.value
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const payload = await verifyToken(token)
-    if (!payload) {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -40,15 +40,29 @@ export async function POST(request: NextRequest) {
       email,
       address,
       prevSchool,
+      studentId,
     } = body
 
-    // Check if email already exists
-    const existing = await prisma.registration.findUnique({
-      where: { email },
-    })
+    // Check if email already exists (only for registrations without studentId)
+    if (!studentId) {
+      const existing = await prisma.registration.findFirst({
+        where: { email },
+      })
 
-    if (existing) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
+      if (existing) {
+        return NextResponse.json({ error: 'Email already registered' }, { status: 400 })
+      }
+    }
+
+    // Check if student already has a registration
+    if (studentId) {
+      const existingStudentRegistration = await prisma.registration.findUnique({
+        where: { studentId },
+      })
+
+      if (existingStudentRegistration) {
+        return NextResponse.json({ error: 'You have already submitted an application' }, { status: 400 })
+      }
     }
 
     const registration = await prisma.registration.create({
@@ -62,6 +76,7 @@ export async function POST(request: NextRequest) {
         email,
         address,
         prevSchool,
+        studentId: studentId || null,
       },
     })
 
